@@ -9,21 +9,19 @@ You can also include images in this folder and reference them in the markdown. E
 
 ## How it works
 
-Explain how your project works
-Explain how your project works
-Explain how your project works
-Explain how your project works
+### A universal Turing machine implemented as a superset of Brainf*ck
+This project aims to logically design a universal Turing machine "bfCPU" implemented as a superset of Brainf*ck.
 
 ## How to test
 
-Explain how to use your project
-Explain how to use your project
-Explain how to use your project
-Explain how to use your project
+### Logic Verification of the bfCPU
+
+
 
 ## External hardware
 
-List external hardware used in your project (e.g. PMOD, LED display, etc), if any
-List external hardware used in your project (e.g. PMOD, LED display, etc), if any
-List external hardware used in your project (e.g. PMOD, LED display, etc), if any
-List external hardware used in your project (e.g. PMOD, LED display, etc), if any
+
+## Technical Information
+
+
+
