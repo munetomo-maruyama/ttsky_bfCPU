@@ -1,0 +1,780 @@
+//===========================================================
+// bfCPU Project
+//-----------------------------------------------------------
+// File Name   : cpu.sv
+// Description : CPU Core
+//-----------------------------------------------------------
+// History :
+// Rev.01 2025.11.21 M.Maruyama First Release
+//-----------------------------------------------------------
+// Copyright (C) 2025-2026 M.Maruyama
+//===========================================================
+
+//----------------------
+// Define State
+//----------------------
+`define STATE_INIT   5'h00
+`define STATE_FETCH  5'h01
+`define STATE_DECODE 5'h02
+`define STATE_PINC   5'h10
+`define STATE_PDEC   5'h11
+`define STATE_INC    5'h12
+`define STATE_DEC    5'h13
+`define STATE_OUT    5'h14
+`define STATE_IN     5'h15
+`define STATE_BEGIN  5'h16
+`define STATE_END    5'h17
+`define STATE_PCLR   5'h18
+`define STATE_CLR    5'h19
+`define STATE_ADD    5'h1a
+`define STATE_SUB    5'h1b
+`define STATE_COPY   5'h1c
+`define STATE_SWAP   5'h1d
+`define STATE_RESET  5'h1e
+`define STATE_NOP    5'h1f
+//
+`define OPCODE_BEGIN 4'h6
+`define OPCODE_END   4'h7
+//
+`define ALUFUNC_THRU 4'h1
+`define ALUFUNC_INC  4'h2
+`define ALUFUNC_DEC  4'h3
+
+//----------------------------
+// Module Top
+//----------------------------
+module CPU
+(
+    input  logic CLK,
+    input  logic RES,
+    //
+    output logic        BUS_TRANS,
+    output logic        BUS_WRITE,
+    output logic        BUS_HCLR,
+    input  logic        BUS_READY,
+    output logic [15:0] BUS_ADDR,
+    output logic [ 7:0] BUS_WDATA,
+    input  logic [ 7:0] BUS_RDATA,
+    //
+    output logic        IO_TRANS,
+    output logic        IO_WRITE,
+    input  logic        IO_READY,
+    output logic [ 7:0] IO_WDATA,
+    input  logic [ 7:0] IO_RDATA
+);
+
+//==========================================
+// Control Slot
+//==========================================
+logic slot;
+assign slot = BUS_READY & IO_READY;
+
+//==========================================
+// Data Path
+//==========================================
+//------------------------------------
+// Program Counter
+//------------------------------------
+logic [15:0] pc;  // 64k-nibbles
+logic        pc_inc;
+logic        pc_dec;
+logic        pc_clr;
+//
+always_ff @(posedge CLK, posedge RES)
+begin
+    if (RES)
+        pc <= 16'h0000;
+    else if (pc_clr & slot)
+        pc <= 16'h0000;
+    else if (pc_inc & slot)
+        pc <= pc + 16'h0001;
+    else if (pc_dec & slot)
+        pc <= pc - 16'h0001;
+end
+
+//------------------------------------
+// Data Pointer
+//------------------------------------
+logic [14:0] ptr; // 32k-bytes
+logic        ptr_clr;
+logic        ptr_inc;
+logic        ptr_dec;
+//
+always_ff @(posedge CLK, posedge RES)
+begin
+    if (RES)
+        ptr <= 15'h0000;
+    else if (ptr_clr & slot)
+        ptr <= 15'h0000;
+    else if (ptr_inc & slot)
+        ptr <= ptr + 15'h0001;
+    else if (ptr_dec & slot)
+        ptr <= ptr - 15'h0001;
+end
+
+//------------------------------------
+// Indent Counter
+//------------------------------------
+logic [15:0] indent;
+logic        indent_clr;
+logic        indent_inc;
+logic        indent_dec;
+logic        indent_zero;
+logic        indent_plus;
+//
+always_ff @(posedge CLK, posedge RES)
+begin
+    if (RES)
+        indent <= 16'h0000;
+    else if (indent_clr & slot)
+        indent <= 16'h0000;
+    else if (indent_inc & slot)
+        indent <= indent + 16'h0001;
+    else if (indent_dec & slot)
+        indent <= indent - 16'h0001;
+end
+//
+assign indent_zero = (indent == 16'h0000);
+assign indent_plus = ~indent[15] & (|indent[14:0]);
+
+//------------------------------------
+// Instruction Cache
+//------------------------------------
+logic        if_do;
+logic [ 3:0] if_code;
+//
+logic [14:0] ic_a0, ic_a1, ic_a2, ic_a3; // Address Array
+logic [ 7:0] ic_d0, ic_d1, ic_d2, ic_d3; // Data Array
+logic        ic_v0, ic_v1, ic_v2, ic_v3; // Valid Bit
+//
+logic        if_hit;
+logic        if_h0, if_h1, if_h2, if_h3;
+logic        if_h0_dphase;
+logic        if_h1_dphase;
+logic        if_h2_dphase;
+logic        if_h3_dphase;
+//
+logic        if_bus_do;
+logic        if_bus_dphase;
+logic [14:0] if_bus_dphase_addr;
+logic        if_bus_dphase_addr_0;
+logic        if_bus_dphase_addr_1;
+logic        if_bus_dphase_addr_2;
+logic        if_bus_dphase_addr_3;
+//
+always_ff @(posedge CLK, posedge RES)
+begin
+    if (RES)
+    begin
+        if_bus_dphase      <= 1'b0;
+        if_bus_dphase_addr <= 15'h0000;
+    end
+    else if (if_bus_do & slot)
+    begin
+        if_bus_dphase      <= 1'b1;
+        if_bus_dphase_addr <= pc[15:1];        
+    end
+    else if (slot)
+    begin
+        if_bus_dphase      <= 1'b0;
+        if_bus_dphase_addr <= 15'h0000;
+    end
+end
+//
+assign if_bus_dphase_addr_0 = (if_bus_dphase_addr[1:0] == 2'b00);
+assign if_bus_dphase_addr_1 = (if_bus_dphase_addr[1:0] == 2'b01);
+assign if_bus_dphase_addr_2 = (if_bus_dphase_addr[1:0] == 2'b10);
+assign if_bus_dphase_addr_3 = (if_bus_dphase_addr[1:0] == 2'b11);
+//
+always_ff @(posedge CLK, posedge RES)
+begin
+    if (RES)
+    begin
+        ic_v0 <= 1'b0;
+        ic_v1 <= 1'b0;
+        ic_v2 <= 1'b0;
+        ic_v3 <= 1'b0;
+    end
+    else if (if_bus_dphase & if_bus_dphase_addr_0 & slot)
+        ic_v0 <= 1'b1;
+    else if (if_bus_dphase & if_bus_dphase_addr_1 & slot)
+        ic_v1 <= 1'b1;
+    else if (if_bus_dphase & if_bus_dphase_addr_2 & slot)
+        ic_v2 <= 1'b1;
+    else if (if_bus_dphase & if_bus_dphase_addr_3 & slot)
+        ic_v3 <= 1'b1;
+end
+//
+always_ff @(posedge CLK, posedge RES)
+begin
+    if (RES)
+    begin
+        ic_a0 <= 15'h0000;
+        ic_a1 <= 15'h0000;
+        ic_a2 <= 15'h0000;
+        ic_a3 <= 15'h0000;
+    end
+    else if (if_bus_dphase & slot)
+    begin
+        ic_a0 <= (if_bus_dphase_addr_0)? if_bus_dphase_addr : ic_a0;
+        ic_a1 <= (if_bus_dphase_addr_1)? if_bus_dphase_addr : ic_a1;
+        ic_a2 <= (if_bus_dphase_addr_2)? if_bus_dphase_addr : ic_a2;
+        ic_a3 <= (if_bus_dphase_addr_3)? if_bus_dphase_addr : ic_a3;
+    end
+end
+//
+always_ff @(posedge CLK, posedge RES)
+begin
+    if (RES)
+    begin
+        ic_d0 <= 8'h00;
+        ic_d1 <= 8'h00;
+        ic_d2 <= 8'h00;
+        ic_d3 <= 8'h00;
+    end
+    else if (if_bus_dphase & slot)
+    begin
+        ic_d0 <= (if_bus_dphase_addr_0)? BUS_RDATA : ic_d0;
+        ic_d1 <= (if_bus_dphase_addr_1)? BUS_RDATA : ic_d1;
+        ic_d2 <= (if_bus_dphase_addr_2)? BUS_RDATA : ic_d2;
+        ic_d3 <= (if_bus_dphase_addr_3)? BUS_RDATA : ic_d3;
+    end
+end
+//
+assign if_h0 = if_do & ic_v0 & (ic_a0 == pc[15:1]);
+assign if_h1 = if_do & ic_v1 & (ic_a1 == pc[15:1]);
+assign if_h2 = if_do & ic_v2 & (ic_a2 == pc[15:1]);
+assign if_h3 = if_do & ic_v3 & (ic_a3 == pc[15:1]);
+assign if_hit = if_h0 | if_h1 | if_h2 | if_h3;
+assign if_bus_do = if_do & ~if_hit;
+//
+always_ff @(posedge CLK, posedge RES)
+begin
+    if (RES)
+    begin
+        if_h0_dphase <= 1'b0;
+        if_h1_dphase <= 1'b0;
+        if_h2_dphase <= 1'b0;
+        if_h3_dphase <= 1'b0;
+    end
+    else if (if_do & slot)
+    begin
+        if_h0_dphase <= if_h0;
+        if_h1_dphase <= if_h1;
+        if_h2_dphase <= if_h2;
+        if_h3_dphase <= if_h3;
+    end
+end
+//
+always_comb
+begin
+    if (if_bus_dphase & ~pc[0] & slot)
+        if_code = BUS_RDATA[3:0];
+    else if (if_bus_dphase &  pc[0] & slot)
+        if_code = BUS_RDATA[7:4];
+    else if (if_h0_dphase & slot)
+        if_code = (~pc[0])? ic_d0[3:0] : ic_d0[7:4];
+    else if (if_h1_dphase & slot)
+        if_code = (~pc[0])? ic_d1[3:0] : ic_d1[7:4];
+    else if (if_h2_dphase & slot)
+        if_code = (~pc[0])? ic_d2[3:0] : ic_d2[7:4];
+    else if (if_h3_dphase & slot)
+        if_code = (~pc[0])? ic_d3[3:0] : ic_d3[7:4];
+    else
+        if_code = 4'hf;
+end
+
+//-------------------------
+// Data Memory Read
+//-------------------------
+logic mr_bus_do;
+logic mr_bus_dphase;
+//
+always_ff @(posedge CLK, posedge RES)
+begin
+    if (RES)
+        mr_bus_dphase <= 1'b0;
+    else if (mr_bus_do & slot)
+        mr_bus_dphase <= 1'b1;
+    else if (slot)
+        mr_bus_dphase <= 1'b0;
+end
+
+//-------------------------
+// Data Memory write
+//-------------------------
+logic mw_bus_do;
+
+//------------------------
+// IO Read
+//------------------------
+logic ir_bus_do;
+logic ir_bus_dphase;
+//
+always_ff @(posedge CLK, posedge RES)
+begin
+    if (RES)
+        ir_bus_dphase <= 1'b0;
+    else if (ir_bus_do & slot)
+        ir_bus_dphase <= 1'b1;
+    else if (slot)
+        ir_bus_dphase <= 1'b0;
+end
+
+//------------------------
+// IO Write
+//------------------------
+logic       iw_bus_do;
+
+//-----------------------------
+// R/W Data from/to BUS and IO
+//-----------------------------
+logic [7:0] rd_data;
+logic [7:0] wr_data;
+//
+always_ff @(posedge CLK, posedge RES)
+begin
+    if (RES)
+        rd_data <= 8'h00;
+    else if (mr_bus_dphase & slot)
+        rd_data <= BUS_RDATA;
+    else if (ir_bus_dphase & slot)
+        rd_data <= IO_RDATA;
+end
+
+//------------------------------------
+// ALU
+//------------------------------------
+logic [3:0] alufunc;
+logic [7:0] aluinx;
+//logic [7:0] aluiny;
+logic [7:0] aluout;
+logic       aluzero;
+//
+assign aluinx = rd_data;
+//
+always_comb
+begin
+    case (alufunc)
+        `ALUFUNC_THRU : aluout = aluinx;
+        `ALUFUNC_INC  : aluout = aluinx + 8'h01;
+        `ALUFUNC_DEC  : aluout = aluinx - 8'h01;
+        default       : aluout = 8'h00;
+    endcase
+end
+//
+assign aluzero = (aluout == 8'h00);
+assign wr_data = aluout;
+
+//------------------------
+// BUS Access
+//------------------------
+logic mc_bus_do; // Clear RAM
+//
+assign BUS_TRANS = (if_bus_do | mr_bus_do | mw_bus_do | mc_bus_do) & BUS_READY;
+assign BUS_ADDR = (if_bus_do              )? {1'b0, pc [15:1]}
+                : ((mr_bus_do | mw_bus_do))? {1'b1, ptr[14:0]}
+                : (mc_bus_do              )? 16'h8000
+                :                            16'h0000;
+assign BUS_WRITE = mw_bus_do;
+assign BUS_HCLR  = mc_bus_do;
+assign BUS_WDATA = wr_data;
+
+//------------------------
+// IO Access
+//------------------------
+assign IO_TRANS = (ir_bus_do | iw_bus_do) & BUS_READY;
+assign IO_WRITE = iw_bus_do;
+assign IO_WDATA = wr_data;
+
+//==========================================
+// Control Logic
+//==========================================
+//--------------------
+// State
+//--------------------
+logic [4:0] state;
+logic [4:0] state_next;
+logic [3:0] seq;
+logic       seq_clr;
+logic       seq_inc;
+logic       seq_dec;
+//
+always_ff @(posedge CLK, posedge RES)
+begin
+    if (RES)
+        state <= `STATE_INIT;
+    else if (slot)
+        state <= state_next;
+end
+//
+always_ff @(posedge CLK, posedge RES)
+begin
+    if (RES)
+        seq <= 4'h0;
+    else if (seq_clr & slot)
+        seq <= 4'h0;
+    else if (seq_inc & slot)
+        seq <= seq + 4'h1;
+    else if (seq_dec & slot)
+        seq <= seq - 4'h1;
+end
+
+//----------------------
+// State Transition
+//----------------------
+always_comb
+begin
+    // Default Outputs
+    state_next = `STATE_INIT;
+    seq_clr    = 1'b0;
+    seq_inc    = 1'b0;
+    seq_dec    = 1'b0;
+    if_do  = 1'b0;
+    pc_inc = 1'b0;
+    pc_dec = 1'b0;
+    pc_clr = 1'b0;
+    ptr_inc = 1'b0;
+    ptr_dec = 1'b0;
+    ptr_clr = 1'b0;
+    mr_bus_do = 1'b0;
+    mw_bus_do = 1'b0;
+    mc_bus_do = 1'b0;
+    ir_bus_do = 1'b0;
+    iw_bus_do = 1'b0;
+    indent_clr = 1'b0;
+    indent_inc = 1'b0;
+    indent_dec = 1'b0;
+    alufunc = `ALUFUNC_THRU;
+
+    //    
+    // Overwrite Outputs
+    casez ({state, seq})
+        //=========================================
+        {`STATE_INIT, 4'h0} :
+        begin
+            pc_clr     = 1'b1;
+            ptr_clr    = 1'b1;
+            indent_clr = 1'b1;
+            mc_bus_do  = 1'b1;
+            seq_inc    = 1'b1;
+            state_next = `STATE_INIT;
+        end
+        //-----------------------------------------
+        {`STATE_INIT, 4'h1} :
+        begin
+            seq_clr = 1'b1;
+            state_next = `STATE_FETCH;
+        end
+        //=========================================
+        {`STATE_FETCH, 4'h0} :
+        begin
+            if_do = 1'b1;
+            state_next = `STATE_DECODE;
+        end
+        //=========================================
+        {`STATE_DECODE, 4'h0} :
+        begin
+            seq_clr = 1'b1;
+            state_next = {1'b1, if_code};
+        end    
+        //=========================================
+        {`STATE_PINC, 4'h0}, {`STATE_PDEC, 4'h0} :
+        begin
+            ptr_inc = ~state[0];
+            ptr_dec =  state[0];
+            pc_inc  = 1'b1;
+            seq_clr = 1'b1;
+            state_next = `STATE_FETCH;
+        end
+        //=========================================
+        {`STATE_INC, 4'h0}, {`STATE_DEC, 4'h0} :
+        begin
+            mr_bus_do = 1'b1;
+            seq_inc = 1'b1;
+            state_next = state;
+        end
+        //-----------------------------------------
+        {`STATE_INC, 4'h1}, {`STATE_DEC, 4'h1} :
+        begin
+            seq_inc = 1'b1;
+            state_next = state;
+        end
+        //-----------------------------------------
+        {`STATE_INC, 4'h2}, {`STATE_DEC, 4'h2} :
+        begin
+            alufunc = state[3:0];
+            mw_bus_do = 1'b1;
+            seq_inc = 1'b1;
+            state_next = state;
+        end
+        //-----------------------------------------
+        {`STATE_INC, 4'h3}, {`STATE_DEC, 4'h3} :
+        begin
+            pc_inc  = 1'b1;
+            seq_clr = 1'b1;
+            state_next = `STATE_FETCH;
+        end
+        //=========================================
+        {`STATE_OUT, 4'h0} :
+        begin
+            mr_bus_do = 1'b1;
+            seq_inc = 1'b1;
+            state_next = state;
+        end
+        //-----------------------------------------
+        {`STATE_OUT, 4'h1} :
+        begin
+            seq_inc = 1'b1;
+            state_next = state;
+        end
+        //-----------------------------------------
+        {`STATE_OUT, 4'h2} :
+        begin
+            alufunc = `ALUFUNC_THRU;
+            iw_bus_do = 1'b1;
+            seq_inc = 1'b1;
+            state_next = state;
+        end
+        //-----------------------------------------
+        {`STATE_OUT, 4'h3} :
+        begin
+            pc_inc  = 1'b1;
+            seq_clr = 1'b1;
+            state_next = `STATE_FETCH;
+        end
+        //=========================================
+        {`STATE_IN, 4'h0} :
+        begin
+            ir_bus_do = 1'b1;
+            seq_inc = 1'b1;
+            state_next = state;
+        end
+        //-----------------------------------------
+        {`STATE_IN, 4'h1} :
+        begin
+            seq_inc = 1'b1;
+            state_next = state;
+        end
+        //-----------------------------------------
+        {`STATE_IN, 4'h2} :
+        begin
+            alufunc = `ALUFUNC_THRU;
+            mw_bus_do = 1'b1;
+            seq_inc = 1'b1;
+            state_next = state;
+        end
+        //-----------------------------------------
+        {`STATE_IN, 4'h3} :
+        begin
+            pc_inc  = 1'b1;
+            seq_clr = 1'b1;
+            state_next = `STATE_FETCH;
+        end
+        //=========================================
+        {`STATE_BEGIN, 4'h0} :
+        begin
+            mr_bus_do = 1'b1;
+            seq_inc = 1'b1;
+            state_next = state;
+        end
+        //-----------------------------------------
+        {`STATE_BEGIN, 4'h1} :
+        begin
+            seq_inc = 1'b1;
+            state_next = state;
+        end
+        //-----------------------------------------
+        {`STATE_BEGIN, 4'h2} :
+        begin
+            alufunc = `ALUFUNC_THRU;
+            //
+            if (~aluzero)
+            begin
+                pc_inc  = 1'b1;
+                seq_clr = 1'b1;
+                state_next = `STATE_FETCH;
+            end
+            else
+            begin
+                indent_clr = 1'b1;            
+                pc_inc  = 1'b1;
+                seq_inc = 1'b1;
+                state_next = state;
+            end
+        end
+        //-----------------------------------------
+        {`STATE_BEGIN, 4'h3} :
+        begin
+            if_do = 1'b1;
+            seq_inc = 1'b1;
+            state_next = state;
+        end
+        //-----------------------------------------
+        {`STATE_BEGIN, 4'h4} :
+        begin
+            if (indent_zero && (if_code == `OPCODE_END))
+            begin
+                pc_inc  = 1'b1;
+                seq_clr = 1'b1;
+                state_next = `STATE_FETCH;
+            end
+            else if (indent_plus && (if_code == `OPCODE_END))
+            begin
+                indent_dec = 1'b1;
+                pc_inc  = 1'b1;
+                seq_dec = 1'b1;
+                state_next = state;
+            end
+            else if (if_code == `OPCODE_BEGIN)
+            begin
+                indent_inc = 1'b1;
+                pc_inc  = 1'b1;
+                seq_dec = 1'b1;
+                state_next = state;
+            end
+            else
+            begin
+                pc_inc  = 1'b1;
+                seq_dec = 1'b1;
+                state_next = state;
+            end
+        end
+        //=========================================
+        {`STATE_END, 4'h0} :
+        begin
+            mr_bus_do = 1'b1;
+            seq_inc = 1'b1;
+            state_next = state;
+        end
+        //-----------------------------------------
+        {`STATE_END, 4'h1} :
+        begin
+            seq_inc = 1'b1;
+            state_next = state;
+        end
+        //-----------------------------------------
+        {`STATE_END, 4'h2} :
+        begin
+            alufunc = `ALUFUNC_THRU;
+            //
+            if (aluzero)
+            begin
+                pc_inc  = 1'b1;
+                seq_clr = 1'b1;
+                state_next = `STATE_FETCH;
+            end
+            else
+            begin
+                indent_clr = 1'b1;            
+                pc_dec  = 1'b1;
+                seq_inc = 1'b1;
+                state_next = state;
+            end
+        end
+        //-----------------------------------------
+        {`STATE_END, 4'h3} :
+        begin
+            if_do = 1'b1;
+            seq_inc = 1'b1;
+            state_next = state;
+        end
+        //-----------------------------------------
+        {`STATE_END, 4'h4} :
+        begin
+            if (indent_zero && (if_code == `OPCODE_BEGIN))
+            begin
+                pc_inc  = 1'b1;
+                seq_clr = 1'b1;
+                state_next = `STATE_FETCH;
+            end
+            else if (indent_plus && (if_code == `OPCODE_BEGIN))
+            begin
+                indent_dec = 1'b1;
+                pc_dec  = 1'b1;
+                seq_dec = 1'b1;
+                state_next = state;
+            end
+            else if (if_code == `OPCODE_END)
+            begin
+                indent_inc = 1'b1;
+                pc_dec  = 1'b1;
+                seq_dec = 1'b1;
+                state_next = state;
+            end
+            else
+            begin
+                pc_dec  = 1'b1;
+                seq_dec = 1'b1;
+                state_next = state;
+            end
+        end
+        //=========================================
+        {`STATE_PCLR, 4'h0} :
+        begin
+            seq_clr = 1'b1;
+            pc_inc  = 1'b1;
+            state_next = `STATE_FETCH;
+        end
+        //=========================================
+        {`STATE_CLR, 4'h0} :
+        begin
+            seq_clr = 1'b1;
+            pc_inc  = 1'b1;
+            state_next = `STATE_FETCH;
+        end
+        //=========================================
+        {`STATE_ADD, 4'h0} :
+        begin
+            seq_clr = 1'b1;
+            pc_inc  = 1'b1;
+            state_next = `STATE_FETCH;
+        end
+        //=========================================
+        {`STATE_SUB, 4'h0} :
+        begin
+            seq_clr = 1'b1;
+            pc_inc  = 1'b1;
+            state_next = `STATE_FETCH;
+        end
+        //=========================================
+        {`STATE_COPY, 4'h0} :
+        begin
+            seq_clr = 1'b1;
+            pc_inc  = 1'b1;
+            state_next = `STATE_FETCH;
+        end
+        //=========================================
+        {`STATE_SWAP, 4'h0} :
+        begin
+            seq_clr = 1'b1;
+            pc_inc  = 1'b1;
+            state_next = `STATE_FETCH;
+        end
+        //=========================================
+        {`STATE_RESET, 4'h0} :
+        begin
+            seq_clr = 1'b1;
+            pc_inc  = 1'b1;
+            state_next = `STATE_INIT;
+        end
+        //=========================================
+        {`STATE_NOP, 4'h0} :
+        begin
+            seq_clr = 1'b1;
+            pc_inc  = 1'b1;
+            state_next = `STATE_FETCH;
+        end
+        //=========================================
+        default :
+        begin
+            state_next = `STATE_INIT;
+        end
+        //=========================================
+    endcase
+end
+
+endmodule
+//===========================================================
+// End of File
+//===========================================================

@@ -1,0 +1,175 @@
+[*]
+[*] GTKWave Analyzer v3.3.116 (w)1999-2023 BSI
+[*] Mon Dec 22 07:45:56 2025
+[*]
+[dumpfile] "/home/taka/ISHI_Kai/ttsky_bfCPU/test/tb_gate.vcd"
+[dumpfile_mtime] "Mon Dec 22 07:43:07 2025"
+[dumpfile_size] 5612551
+[savefile] "/home/taka/ISHI_Kai/ttsky_bfCPU/test/tb_gate.gtkw"
+[timestart] 95546000000
+[size] 1540 958
+[pos] -1 -1
+*-29.417200 96659901000 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
+[treeopen] tb.
+[treeopen] tb.U_CHIP.
+[sst_width] 297
+[signals_width] 334
+[sst_expanded] 1
+[sst_vpaned_height] 282
+@200
+-System
+@28
+tb.U_CHIP.clk
+tb.U_CHIP.rst_n
+@200
+-Inputs
+@22
+tb.U_CHIP.ui_in[7:0]
+@200
+-Bidirectional Pins
+@22
+tb.U_CHIP.uio_out[7:0]
+tb.U_CHIP.uio_oe[7:0]
+tb.U_CHIP.uio_in[7:0]
+@200
+-Output Pins
+@22
+tb.U_CHIP.uo_out[7:0]
+@200
+-QSPI
+@28
+tb.qspi_cs_n
+tb.qspi_sck
+@22
+tb.qspi_sio[3:0]
+tb.qspi_sio_o[3:0]
+tb.qspi_sio_i[3:0]
+@200
+-UART
+@28
+tb.detect_in
+tb.uart_rxd_done
+tb.uart_rxd
+@22
+tb.U_CHIP.ui_in[7:0]
+@200
+-IF Access
+-DM Access
+-CPU
+@800022
+#{tb.U_CHIP.\U_TOP.U_CPU.state[4:0]} tb.U_CHIP.\U_TOP.U_CPU.state[4] tb.U_CHIP.\U_TOP.U_CPU.state[3] tb.U_CHIP.\U_TOP.U_CPU.state[2] tb.U_CHIP.\U_TOP.U_CPU.state[1] tb.U_CHIP.\U_TOP.U_CPU.state[0]
+@28
+tb.U_CHIP.\U_TOP.U_CPU.state[4]
+tb.U_CHIP.\U_TOP.U_CPU.state[3]
+tb.U_CHIP.\U_TOP.U_CPU.state[2]
+tb.U_CHIP.\U_TOP.U_CPU.state[1]
+tb.U_CHIP.\U_TOP.U_CPU.state[0]
+@800023
+#{tb.U_CHIP.\U_TOP.U_CPU.seq[3:0]} tb.U_CHIP.\U_TOP.U_CPU.seq[3] tb.U_CHIP.\U_TOP.U_CPU.seq[2] tb.U_CHIP.\U_TOP.U_CPU.seq[1] tb.U_CHIP.\U_TOP.U_CPU.seq[0]
+@29
+tb.U_CHIP.\U_TOP.U_CPU.seq[3]
+tb.U_CHIP.\U_TOP.U_CPU.seq[2]
+tb.U_CHIP.\U_TOP.U_CPU.seq[1]
+tb.U_CHIP.\U_TOP.U_CPU.seq[0]
+@1001201
+-group_end
+@1001200
+-group_end
+@28
+tb.U_CHIP.\U_TOP.U_UART.U_SASC_TOP.rxd_r1
+tb.U_CHIP.\U_TOP.U_UART.U_SASC_TOP.rxd_s
+tb.U_CHIP.\U_TOP.U_UART.U_SASC_TOP.rxd_dly[0]
+tb.U_CHIP.\U_TOP.U_UART.U_SASC_TOP.rxd_dly[1]
+tb.U_CHIP.\U_TOP.U_UART.U_SASC_TOP.rxd_dly[2]
+tb.U_CHIP.\U_TOP.U_UART.U_SASC_TOP.rxd_dly[3]
+tb.U_CHIP.\U_TOP.U_UART.U_SASC_TOP.rxd_dly[4]
+tb.U_CHIP.\U_TOP.U_UART.U_SASC_TOP.rxd_dly[5]
+tb.U_CHIP.\U_TOP.U_UART.BRG.sio_ce_x4
+tb.U_CHIP.\U_TOP.U_UART.U_SASC_TOP.change
+tb.U_CHIP.\U_TOP.U_UART.U_SASC_TOP.dpll_state[0]
+tb.U_CHIP.\U_TOP.U_UART.U_SASC_TOP.dpll_state[1]
+tb.U_CHIP.\U_TOP.U_UART.U_SASC_TOP.dpll_state[2]
+tb.U_CHIP.\U_TOP.U_UART.U_SASC_TOP.dpll_state[3]
+tb.U_CHIP.\U_TOP.U_UART.U_SASC_TOP.rx_sio_ce
+tb.U_CHIP.\U_TOP.U_UART.U_SASC_TOP.rx_sio_ce_d
+tb.U_CHIP.\U_TOP.U_UART.U_SASC_TOP.rx_sio_ce_r1
+tb.U_CHIP.\U_TOP.U_UART.U_SASC_TOP.rx_sio_ce_r2
+tb.U_CHIP.\U_TOP.U_UART.U_SASC_TOP.rx_go
+tb.U_CHIP._1164_
+tb.U_CHIP._1167_
+tb.U_CHIP._0155_
+tb.U_CHIP.\U_TOP.U_UART.U_SASC_TOP.rx_bit_cnt[0]
+tb.U_CHIP.\U_TOP.U_UART.U_SASC_TOP.rx_bit_cnt[1]
+tb.U_CHIP.\U_TOP.U_UART.U_SASC_TOP.rx_bit_cnt[2]
+tb.U_CHIP.\U_TOP.U_UART.U_SASC_TOP.rx_bit_cnt[3]
+tb.U_CHIP._0020_
+tb.U_CHIP.\U_TOP.U_UART.U_SASC_TOP.rx_valid
+tb.U_CHIP.\U_TOP.U_UART.U_SASC_TOP.rx_valid_r
+tb.U_CHIP._0961_
+tb.U_CHIP._1156_
+tb.U_CHIP._0962_
+tb.U_CHIP._0149_
+tb.U_CHIP.\U_TOP.U_UART.U_SASC_TOP.rx_fifo.wp[0]
+tb.U_CHIP.net176
+tb.U_CHIP._0671_
+tb.U_CHIP._0670_
+tb.U_CHIP._0669_
+tb.U_CHIP._0668_
+tb.U_CHIP._0672_
+tb.U_CHIP._0667_
+tb.U_CHIP._0495_
+tb.U_CHIP._0673_
+tb.U_CHIP.net96
+tb.U_CHIP.net110
+tb.U_CHIP._0859_
+tb.U_CHIP.net73
+tb.U_CHIP.net81
+tb.U_CHIP._0858_
+tb.U_CHIP._0898_
+tb.U_CHIP._0886_
+tb.U_CHIP._1430_
+tb.U_CHIP.net110
+tb.U_CHIP.clknet_leaf_27_clk
+tb.U_CHIP._0244_
+tb.U_CHIP.\U_TOP.U_CACHE.if_hit_dphase
+tb.U_CHIP._0490_
+tb.U_CHIP._0562_
+tb.U_CHIP._0585_
+tb.U_CHIP._0586_
+tb.U_CHIP._0587_
+tb.U_CHIP.\U_TOP.U_CPU.if_code[3]
+tb.U_CHIP.\U_TOP.U_CPU.if_code[2]
+tb.U_CHIP.\U_TOP.U_CPU.if_code[1]
+tb.U_CHIP.\U_TOP.U_CPU.if_code[0]
+tb.U_CHIP.\U_TOP.U_CPU.state[4]
+tb.U_CHIP.\U_TOP.U_CPU.state[3]
+tb.U_CHIP.\U_TOP.U_CPU.state[2]
+tb.U_CHIP.\U_TOP.U_CPU.state[1]
+tb.U_CHIP.\U_TOP.U_CPU.state[0]
+tb.U_CHIP.\U_TOP.U_CPU.seq[3]
+tb.U_CHIP.\U_TOP.U_CPU.seq[2]
+tb.U_CHIP.\U_TOP.U_CPU.seq[1]
+tb.U_CHIP.\U_TOP.U_CPU.seq[0]
+@200
+-QSPI RAM
+@28
+tb.U_CHIP.\U_TOP.U_CACHE.BUS_RDY
+@22
+tb.U_M23LC512.MemoryByte08000[7:0]
+tb.U_M23LC512.MemoryByte08001[7:0]
+tb.U_M23LC512.MemoryByte08002[7:0]
+tb.U_M23LC512.MemoryByte08003[7:0]
+tb.U_M23LC512.MemoryByte08004[7:0]
+tb.U_M23LC512.MemoryByte08005[7:0]
+tb.U_M23LC512.MemoryByte08006[7:0]
+tb.U_M23LC512.MemoryByte08007[7:0]
+tb.U_M23LC512.MemoryByte08008[7:0]
+tb.U_M23LC512.MemoryByte08009[7:0]
+tb.U_M23LC512.MemoryByte0800A[7:0]
+tb.U_M23LC512.MemoryByte0800B[7:0]
+tb.U_M23LC512.MemoryByte0800C[7:0]
+tb.U_M23LC512.MemoryByte0800D[7:0]
+tb.U_M23LC512.MemoryByte0800E[7:0]
+tb.U_M23LC512.MemoryByte0800F[7:0]
+[pattern_trace] 1
+[pattern_trace] 0
