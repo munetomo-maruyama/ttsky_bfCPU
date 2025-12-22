@@ -24,13 +24,7 @@
 `define STATE_IN     5'h15
 `define STATE_BEGIN  5'h16
 `define STATE_END    5'h17
-`define STATE_PCLR   5'h18
-`define STATE_CLR    5'h19
-`define STATE_ADD    5'h1a
-`define STATE_SUB    5'h1b
-`define STATE_COPY   5'h1c
-`define STATE_SWAP   5'h1d
-`define STATE_RESET  5'h1e
+`define STATE_RESET  5'h18
 `define STATE_NOP    5'h1f
 //
 `define OPCODE_PINC  4'h0
@@ -41,13 +35,7 @@
 `define OPCODE_IN    4'h5
 `define OPCODE_BEGIN 4'h6
 `define OPCODE_END   4'h7
-`define OPCODE_PCLR  4'h8
-`define OPCODE_CLR   4'h9
-`define OPCODE_ADD   4'ha
-`define OPCODE_SUB   4'hb
-`define OPCODE_COPY  4'hc
-`define OPCODE_SWAP  4'hd
-`define OPCODE_RESET 4'he
+`define OPCODE_RESET 4'h8
 `define OPCODE_NOP   4'hf
 //
 `define ALUFUNC_ZERO 4'h0
@@ -482,6 +470,16 @@ begin
                     // Restart
                     seq_clr = 1'b1;
                     state_next = `STATE_INIT;
+                end
+                //---------------------------------
+                `OPCODE_NOP :
+                begin
+                    // Invoke IF
+                    if_do  = 1'b1;
+                    pc_inc = 1'b1;
+                    // Next Instruction Decode
+                    seq_clr    = 1'b1;
+                    state_next = `STATE_DECODE;
                 end
                 //---------------------------------
                 default : // No Operation

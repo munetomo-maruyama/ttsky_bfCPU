@@ -54,9 +54,6 @@ async def test_project(dut):
     #
     await dut.uart_txd_done.rising_edge
     assert dut.uart_txd_data.value == 0x2a # 6*7
-    #
-    await dut.uart_txd_done.rising_edge
-    assert dut.uart_txd_data.value == 0x48 # 8*9
 
     # Finish
     await ClockCycles(dut.clk, 100)
