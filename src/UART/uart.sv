@@ -9,6 +9,14 @@
 //-----------------------------------------------------------
 // Copyright (C) 2025-2026 M.Maruyama
 //===========================================================
+//
+// ---------------
+// ADDR    REG
+// ---------------
+// 2'b00   TXD/RXD
+// 2'b10   DIV0
+// 2'b11   DIV1
+// ---------------
 
 //-------------------
 // Module Top
@@ -20,6 +28,7 @@ module UART
     //
     input  logic        IO_REQ,
     input  logic        IO_WRITE,
+    input  logic [1:0]  IO_ADDR,
     input  logic [ 7:0] IO_WDATA,
     output logic [ 7:0] IO_RDATA,
     output logic        IO_RDY,
@@ -29,7 +38,7 @@ module UART
 );
 
 //---------------------
-// Instance of UART IP
+// Internal Signals
 //---------------------
 logic       we;
 logic       re;
@@ -41,22 +50,63 @@ logic       tx_full, rx_empty;
 logic       rts;
 logic _unused;
 assign _unused = rts;
-//
+
+//---------------------
+// Baud Rate Register
+//---------------------
 // Baud Rate = (fCLK/4) / ((div0+2)*(div1))
 //     CLK=10MHz, 115200bps
 //     115200*4=460800
 //     10MHz/460800Hz=22=11*2
 //     div0=9 (11-2) , div1=2
-`ifdef SIMULATION
-// 312500bps (3200ns)
-assign div0 = 8'h02;
-assign div1 = 8'h02;
-`else
-// 115200bps
-assign div0 = 8'h09;
-assign div1 = 8'h02;
-`endif
 //
+logic div0_aphase;
+logic div0_dphase;
+logic div1_aphase;
+logic div1_dphase;
+//
+assign div0_aphase = IO_REQ & IO_WRITE & (IO_ADDR == 2'b10) & IO_RDY;
+assign div1_aphase = IO_REQ & IO_WRITE & (IO_ADDR == 2'b11) & IO_RDY;
+//
+always_ff @(posedge CLK, posedge RES)
+begin
+    if (RES)
+        div0_dphase <= 1'b0;
+    else if(div0_aphase)
+        div0_dphase <= 1'b1;
+    else if (IO_RDY)
+        div0_dphase <= 1'b0;
+end
+//
+always_ff @(posedge CLK, posedge RES)
+begin
+    if (RES)
+        div1_dphase <= 1'b0;
+    else if(div1_aphase)
+        div1_dphase <= 1'b1;
+    else if (IO_RDY)
+        div1_dphase <= 1'b0;
+end
+//
+always_ff @(posedge CLK, posedge RES)
+begin
+    if (RES)
+        div0 <= 8'h00;
+    else if (div0_aphase)
+        div0 <= IO_WDATA;
+end
+//
+always_ff @(posedge CLK, posedge RES)
+begin
+    if (RES)
+        div1 <= 8'h00;
+    else if (div1_aphase)
+        div1 <= IO_WDATA;
+end
+//
+//---------------------
+// Instance of UART IP
+//---------------------
 sasc_top U_SASC_TOP
 (
     .clk       (CLK),
@@ -88,20 +138,20 @@ sasc_brg BRG
 //------------------
 // I/O Data Write
 //------------------
-logic  waphase;
-logic  wdphase;
+logic  txd_aphase;
+logic  txd_dphase;
 logic  tx_rdy;
 //
 assign tx_rdy = ~tx_full;
-assign waphase  = IO_REQ & IO_WRITE & IO_RDY;
+assign txd_aphase  = IO_REQ & IO_WRITE & (IO_ADDR == 2'b00) & IO_RDY;
 //
-assign we = wdphase & IO_RDY;
+assign we = txd_dphase & IO_RDY;
 //
 always_ff @(posedge CLK, posedge RES)
 begin
     if (RES)
         din <= 8'h00;
-    else if (waphase)
+    else if (txd_aphase)
         din <= IO_WDATA;
     else if (IO_RDY)
         din <= 8'h00;
@@ -110,41 +160,46 @@ end
 always_ff @(posedge CLK, posedge RES)
 begin
     if (RES)
-        wdphase <= 1'b0;
-    else if (waphase)
-        wdphase <= 1'b1;
+        txd_dphase <= 1'b0;
+    else if (txd_aphase)
+        txd_dphase <= 1'b1;
     else if (IO_RDY)
-        wdphase <= 1'b0;
+        txd_dphase <= 1'b0;
 end
 
 //------------------
 // I/O Data Read
 //------------------
-logic  raphase;
-logic  rdphase;
+logic  rxd_aphase;
+logic  rxd_dphase;
 logic  rx_rdy;
 //
 assign rx_rdy = ~rx_empty;
-assign raphase  = IO_REQ & ~IO_WRITE & IO_RDY;
+assign rxd_aphase  = IO_REQ & ~IO_WRITE & (IO_ADDR == 2'b00) & IO_RDY;
 //
 always_ff @(posedge CLK, posedge RES)
 begin
     if (RES)
-        rdphase <= 1'b0;
-    else if (raphase)
-        rdphase <= 1'b1;
+        rxd_dphase <= 1'b0;
+    else if (rxd_aphase)
+        rxd_dphase <= 1'b1;
     else if (IO_RDY)
-        rdphase <= 1'b0;
+        rxd_dphase <= 1'b0;
 end
 //
-assign re = rdphase & IO_RDY;
-assign IO_RDATA = dout;
+assign re = rxd_dphase & IO_RDY;
 
-//-------------------
-// I/O Access Ready
-//-------------------
-assign IO_RDY = (wdphase)? tx_rdy
-              : (rdphase)? rx_rdy : 1'b1;
+//---------------------------------
+// I/O Access Read Data and Ready
+//---------------------------------
+assign IO_RDATA = (rxd_dphase )? dout
+                : (div0_dphase)? div0
+                : (div1_dphase)? div1
+                : 8'h00;
+//
+assign IO_RDY = (txd_dphase)? tx_rdy
+              : (rxd_dphase)? rx_rdy
+              : 1'b1;
 
 endmodule
 //===========================================================

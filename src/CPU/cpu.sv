@@ -70,6 +70,7 @@ module CPU
     // I/O Access
     output logic        IO_REQ,
     output logic        IO_WRITE,
+    output logic [ 1:0] IO_ADDR,
     output logic [ 7:0] IO_WDATA,
     input  logic [ 7:0] IO_RDATA,
     input  logic        IO_RDY
@@ -163,6 +164,7 @@ logic       ir_do_dphase;
 logic [7:0] iw_data;
 logic [7:0] ir_data;
 logic [7:0] ir_data_keep;
+logic [1:0] io_addr;
 //
 always_ff @(posedge CLK, posedge RES)
 begin
@@ -176,6 +178,7 @@ end
 //
 assign IO_REQ   = (ir_do | iw_do) & slot;
 assign IO_WRITE = iw_do;
+assign IO_ADDR  = io_addr;
 assign IO_WDATA = iw_data;
 //
 always_ff @(posedge CLK, posedge RES)
@@ -240,9 +243,9 @@ end
 assign dm_addr = ptr;
 //
 `ifdef SIMULATION
-assign ptr_end      = (ptr == 15'h001f);
+assign ptr_end      = (ptr == 15'h001d);
 `else
-assign ptr_end      = (ptr == 15'h7fff);
+assign ptr_end      = (ptr == 15'h7ffd);
 `endif
 
 //------------------------------------
@@ -357,6 +360,7 @@ begin
     dw_do = 1'b0;
     ir_do = 1'b0;
     iw_do = 1'b0;
+    io_addr = 2'b00;
     indent_clr = 1'b0;
     indent_inc = 1'b0;
     indent_dec = 1'b0;
@@ -369,33 +373,31 @@ begin
         //=========================================
         // Clear All DM (0x8000 - 0xFFFF)
         //=========================================
+        // Initialize CPU Resources
         {`STATE_INIT, 4'h0} :
         begin
-            // Initialize Resources
             pc_clr     = 1'b1;
             ptr_clr    = 1'b1;
             indent_clr = 1'b1;
-            // Clear All DM
+            // Clear All Data Memory
             seq_inc    = 1'b1;
             state_next = `STATE_INIT;
         end
         //-----------------------------------------
+        // Clear All Data Memory
         {`STATE_INIT, 4'h1} :
         begin
-            // PTR Reaches at End, Goto Next Instruction Decode
+            // PTR Reaches at End, Goto Next Sequence
             if (ptr_end)
             begin
                 // Invoke DM Write Zero 
                 dw_do   = 1'b1;
                 alufunc = `ALUFUNC_ZERO;
-                // Clear PTR
-                ptr_clr = 1'b1;
-                // Invoke IF
-                if_do  = 1'b1;
-                pc_inc = 1'b1;
-                // Next Instruction Decode
-                seq_clr    = 1'b1;
-                state_next = `STATE_DECODE;
+                // Increment PTR to read DIV0
+                ptr_inc = 1'b1;
+                // Next Sequence
+                seq_inc = 1'b1;
+                state_next = `STATE_INIT;
             end
             // Repeat *PTR++=0
             else
@@ -408,6 +410,57 @@ begin
                 // Stay in this State
                 state_next = `STATE_INIT;
             end
+        end
+        //-----------------------------------------
+        // Initialize UART Baud Rate (DIV0)
+        {`STATE_INIT, 4'h2} :
+        begin
+            // Invoke DM Read at PTR=0x7ffe
+            dr_do = 1'b1;
+            // Next Sequence
+            seq_inc = 1'b1;
+            state_next = `STATE_INIT;
+        end
+        {`STATE_INIT, 4'h3} :
+        begin
+            // Get dr_data and pass it through ALU
+            aluinx_dr = 1'b1;
+            alufunc   = `ALUFUNC_THRU;
+            // Invoke IO Write at DIV0
+            iw_do = 1'b1;
+            io_addr = 2'b10;
+            // Increment PTR to read DIV1
+            ptr_inc = 1'b1;
+            // Next Sequence
+            seq_inc = 1'b1;
+            state_next = `STATE_INIT;
+        end
+        //-----------------------------------------
+        // Initialize UART Baud Rate (DIV1)
+        {`STATE_INIT, 4'h3} :
+        begin
+            // Invoke DM Read at PTR=0x7fff
+            dr_do = 1'b1;
+            // Next Sequence
+            seq_inc = 1'b1;
+            state_next = `STATE_INIT;
+        end
+        {`STATE_INIT, 4'h4} :
+        begin
+            // Get dr_data and pass it through ALU
+            aluinx_dr = 1'b1;
+            alufunc   = `ALUFUNC_THRU;
+            // Invoke IO Write at DIV1
+            iw_do = 1'b1;
+            io_addr = 2'b11;
+            // Clear PTR
+            ptr_clr = 1'b1;
+            // Invoke IF
+            if_do  = 1'b1;
+            pc_inc = 1'b1;
+            // Next Instruction Decode
+            seq_clr    = 1'b1;
+            state_next = `STATE_DECODE;
         end
         //=========================================
         // Dispatch along with if_code
@@ -573,7 +626,7 @@ begin
                 indent_clr = 1'b1;
                 // Next Sequence
                 seq_inc = 1'b1;
-                state_next = state;
+                state_next = `STATE_BEGIN;
             end
         end
         {`STATE_BEGIN, 4'h2} :
@@ -597,7 +650,7 @@ begin
                 if_do  = 1'b1;
                 pc_inc = 1'b1;
                 // Stay in this State
-                state_next = state;
+                state_next = `STATE_BEGIN;
             end
             // Found Nested BEGIN
             else if (if_code == `OPCODE_BEGIN)
@@ -608,7 +661,7 @@ begin
                 if_do  = 1'b1;
                 pc_inc = 1'b1;
                 // Stay in this State
-                state_next = state;
+                state_next = `STATE_BEGIN;
             end
             // Other Instructions
             else
@@ -617,7 +670,7 @@ begin
                 if_do  = 1'b1;
                 pc_inc = 1'b1;
                 // Stay in this State
-                state_next = state;
+                state_next = `STATE_BEGIN;
             end                    
         end        
         //=========================================
@@ -647,7 +700,7 @@ begin
                 indent_clr = 1'b1;
                 // Next Sequence
                 seq_inc = 1'b1;
-                state_next = state;
+                state_next = `STATE_END;
             end
         end
         {`STATE_END, 4'h2} :
@@ -657,7 +710,7 @@ begin
             pc_dec = 1'b1;
             // Next Sequence
             seq_inc = 1'b1;
-            state_next = state;
+            state_next = `STATE_END;
         end
         {`STATE_END, 4'h3} :
         begin
@@ -668,7 +721,7 @@ begin
                 pc_inc2 = 1'b1;
                 // Next Sequence
                 seq_inc = 1'b1;
-                state_next = state;
+                state_next = `STATE_END;
             end
             // Found Unmatched BEGIN
             else if (indent_plus && (if_code == `OPCODE_BEGIN))
@@ -679,7 +732,7 @@ begin
                 if_do  = 1'b1;
                 pc_dec = 1'b1;
                 // Stay in this State
-                state_next = state;
+                state_next = `STATE_END;
             end
             // Found Nested END
             else if (if_code == `OPCODE_END)
@@ -690,7 +743,7 @@ begin
                 if_do  = 1'b1;
                 pc_dec = 1'b1;
                 // Stay in this State
-                state_next = state;
+                state_next = `STATE_END;
             end
             // Other Instructions
             else
@@ -699,7 +752,7 @@ begin
                 if_do  = 1'b1;
                 pc_dec = 1'b1;
                 // Stay in this State
-                state_next = state;
+                state_next = `STATE_END;
             end                    
         end        
         {`STATE_END, 4'h4} :

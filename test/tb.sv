@@ -17,11 +17,8 @@
    that can be driven / tested by the cocotb test.py.
 */
 
-`ifdef GATESIM
-`define TB_UART_BITWIDTH  8681 //ns, 115200bps
-`else
-`define TB_UART_BITWIDTH  3200 //ns
-`endif
+//`define TB_UART_BITWIDTH  8681 //ns, 115200bps
+`define TB_UART_BITWIDTH  3200 //ns, for simulation
 
 //---------------------------------------
 // Testbench Top
@@ -49,7 +46,20 @@ end
 //---------------------
 initial
 begin
+    // Initialzie Whole Mat (to avoid get unknown data)
+    for (i = 0; i < 65536; i = i + 1) U_M23LC512.MemoryBlock[i] = 8'(i);
+    //
+    // Program Code
     $readmemh("./QSPI/multiplication.v", U_M23LC512.MemoryBlock);
+    //
+    // UART Baud Rate (for Simulation; 1bit period = 3200ns)
+    `ifdef GATESIM
+    U_M23LC512.MemoryBlock[32768+32766] = 8'h02; // DIV0
+    U_M23LC512.MemoryBlock[32768+32767] = 8'h02; // DIV1    
+    `else
+    U_M23LC512.MemoryBlock[32768+30] = 8'h02; // DIV0
+    U_M23LC512.MemoryBlock[32768+31] = 8'h02; // DIV1    
+    `endif
 end
 
 //-------------------------
@@ -169,9 +179,9 @@ begin
     else
         `ifdef GATESIM
          // backslash needs one space after the name 
-        detect_in <= U_CHIP.\U_TOP.U_UART.rdphase ;
+        detect_in <= U_CHIP.\U_TOP.U_UART.rxd_dphase ;
         `else
-        detect_in <= U_CHIP.U_TOP.U_UART.rdphase;
+        detect_in <= U_CHIP.U_TOP.U_UART.rxd_dphase;
         `endif
 end
 //
@@ -225,7 +235,7 @@ begin
 end
 
 //-----------------------------
-// UART Detect Traansmit Data
+// UART Detect Transmit Data
 //-----------------------------
 logic [7:0] uart_txd_data;
 logic       uart_txd_done;

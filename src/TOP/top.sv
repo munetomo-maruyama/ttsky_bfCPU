@@ -56,6 +56,7 @@ logic        dm_rdy;
 //
 logic        io_req;
 logic        io_write;
+logic [ 1:0] io_addr;
 logic [ 7:0] io_wdata;
 logic [ 7:0] io_rdata;
 logic        io_rdy;
@@ -79,6 +80,7 @@ CPU U_CPU
     //
     .IO_REQ   (io_req),
     .IO_WRITE (io_write),
+    .IO_ADDR  (io_addr),
     .IO_WDATA (io_wdata),
     .IO_RDATA (io_rdata),
     .IO_RDY   (io_rdy)
@@ -151,6 +153,7 @@ UART U_UART
     //
     .IO_REQ   (io_req),
     .IO_WRITE (io_write),
+    .IO_ADDR  (io_addr),
     .IO_WDATA (io_wdata),
     .IO_RDATA (io_rdata),
     .IO_RDY   (io_rdy),
