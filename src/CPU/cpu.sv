@@ -437,7 +437,7 @@ begin
         end
         //-----------------------------------------
         // Initialize UART Baud Rate (DIV1)
-        {`STATE_INIT, 4'h3} :
+        {`STATE_INIT, 4'h4} :
         begin
             // Invoke DM Read at PTR=0x7fff
             dr_do = 1'b1;
@@ -445,7 +445,7 @@ begin
             seq_inc = 1'b1;
             state_next = `STATE_INIT;
         end
-        {`STATE_INIT, 4'h4} :
+        {`STATE_INIT, 4'h5} :
         begin
             // Get dr_data and pass it through ALU
             aluinx_dr = 1'b1;
