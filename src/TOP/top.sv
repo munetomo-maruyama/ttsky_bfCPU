@@ -20,8 +20,8 @@ module TOP
     //
     output logic       QSPI_CS_N,
     output logic       QSPI_CS_E,
-    output logic       QSPI_SCK_E,    
     output logic       QSPI_SCK,
+    output logic       QSPI_SCK_E,    
     output logic [3:0] QSPI_SIO_O,
     output logic [3:0] QSPI_SIO_E,
     input  logic [3:0] QSPI_SIO_I,
@@ -30,14 +30,25 @@ module TOP
     input  logic UART_RXD
 );
 
-//----------------------------
-// QSPI Output Driver
-//----------------------------
+//----------------------------------
+// QSPI Output Driver (Open Drain)
+//----------------------------------
+logic       qspi_cs_n;
+logic       qspi_sck;
+logic [3:0] qspi_sio_o;
 logic [3:0] qspi_sio_e;
+logic [3:0] qspi_sio_i;
 //
-assign QSPI_CS_E  = RES_N;
-assign QSPI_SCK_E = RES_N;
-assign QSPI_SIO_E = (RES_N)? qspi_sio_e : 4'b0000;
+assign QSPI_CS_N  = 1'b0;
+assign QSPI_CS_E  = (~qspi_cs_n & RES_N);
+assign QSPI_SCK   = 1'b0;
+assign QSPI_SCK_E = (~qspi_sck & RES_N);
+assign QSPI_SIO_O    = 4'b0000;
+assign QSPI_SIO_E[0] = (~qspi_sio_o[0] & qspi_sio_e[0] & RES_N);
+assign QSPI_SIO_E[1] = (~qspi_sio_o[1] & qspi_sio_e[1] & RES_N);
+assign QSPI_SIO_E[2] = (~qspi_sio_o[2] & qspi_sio_e[2] & RES_N);
+assign QSPI_SIO_E[3] = (~qspi_sio_o[3] & qspi_sio_e[3] & RES_N);
+assign qspi_sio_i = QSPI_SIO_I;
 
 //----------------------------
 // CPU
@@ -136,11 +147,11 @@ QSPI_SRAM U_RAM
     .BUS_RDATA (bus_rdata),
     .BUS_RDY   (bus_rdy),
     //
-    .QSPI_CS_N  (QSPI_CS_N),
-    .QSPI_SCK   (QSPI_SCK),
-    .QSPI_SIO_O (QSPI_SIO_O),
+    .QSPI_CS_N  (qspi_cs_n),
+    .QSPI_SCK   (qspi_sck),
+    .QSPI_SIO_O (qspi_sio_o),
     .QSPI_SIO_E (qspi_sio_e),
-    .QSPI_SIO_I (QSPI_SIO_I)
+    .QSPI_SIO_I (qspi_sio_i)
 );
 
 //----------------------------

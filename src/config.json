@@ -14,8 +14,8 @@
   "//": "PL_TARGET_DENSITY_PCT - You can increase this if Global Placement fails with error GPL-0302.",
   "//": "Users have reported that values up to 80 worked well for them.",
   "//": "(1) bfCPU without cache on 1x2, 0.70 makes antenna error, 0.80 makes all pass.",
-  "//": "(2) bfCPU with    cache on 2x2, 0.70 makes all pass.",
-  "PL_TARGET_DENSITY_PCT": 70,
+  "//": "(2) bfCPU with    cache on 2x2, 0.87 makes all pass including antenna.",
+  "PL_TARGET_DENSITY_PCT": 87,
 
   "//": "CLOCK_PERIOD - Increase this in case you are getting setup time violations.",
   "//": "The value is in nanoseconds, so 20ns == 50MHz.",

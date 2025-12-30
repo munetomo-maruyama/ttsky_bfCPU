@@ -18,9 +18,9 @@ module FPGA
     input  logic CLK,
     input  logic RES_N,
     //
-    output logic       QSPI_CS_N,
-    output logic       QSPI_SCK,
-    output wire  [3:0] QSPI_SIO,
+    inout  wire        QSPI_CS_N,
+    inout  wire        QSPI_SCK,
+    inout  wire  [3:0] QSPI_SIO,
     //
     output logic UART_TXD,
     input  logic UART_RXD

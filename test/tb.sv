@@ -147,6 +147,8 @@ tt_um_bfcpu U_CHIP
 //-----------------------------
 // SPIRAM (23LC512)
 //-----------------------------
+pullup (qspi_cs_n);
+pullup (qspi_sck);
 pullup (qspi_sio[0]);
 pullup (qspi_sio[1]);
 pullup (qspi_sio[2]);
