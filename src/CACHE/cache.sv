@@ -64,7 +64,7 @@ module CACHE
 //     Entry = 1
 //     Line  = 4bytes = 8instructions
 //===============================================================
-//
+//1
 // Slot
 logic if_slot; // Slot of Instruction Fetch
 //
@@ -414,9 +414,7 @@ logic [31:0] bus_pend_wdata;
 logic [31:0] bus_pend_rdata;
 logic [ 2:0] bus_count;
 logic        bus_count_end;
-logic        bus_count_0567;
 logic        bus_count_0123;
-logic        bus_count_7;
 //
 always_ff @(posedge CLK, posedge RES)
 begin
@@ -435,12 +433,7 @@ begin
 end
 //
 assign bus_count_end  = (bus_count == 3'b000);
-assign bus_count_0567 = (bus_count == 3'b000)
-                      | (bus_count == 3'b101)
-                      | (bus_count == 3'b110)
-                      | (bus_count == 3'b111);
 assign bus_count_0123 = ~bus_count[2];
-assign bus_count_7    = (bus_count == 3'b111);
 //
 always_ff @(posedge CLK, posedge RES)
 begin

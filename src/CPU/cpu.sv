@@ -123,7 +123,6 @@ assign if_code = (if_do_dphase & IF_RDY)? IF_CODE : if_code_keep;
 logic        dr_do;
 logic        dr_do_dphase;
 logic        dw_do;
-logic        dm_do;
 logic [14:0] dm_addr;
 logic [ 7:0] dw_data;
 logic [ 7:0] dr_data;
@@ -195,11 +194,11 @@ assign ir_data = (ir_do_dphase & IO_RDY)? IO_RDATA : ir_data_keep;
 // Program Counter
 //------------------------------------
 logic [15:0] pc;  // 64k-nibbles
+logic        pc_clr;
 logic        pc_inc;
 logic        pc_dec;
 logic        pc_inc2;
 logic        pc_dec2;
-logic        pc_clr;
 //
 always_ff @(posedge CLK, posedge RES)
 begin
@@ -315,7 +314,6 @@ logic [4:0] state_next;
 logic [3:0] seq;
 logic       seq_clr;
 logic       seq_inc;
-logic       seq_dec;
 //
 always_ff @(posedge CLK, posedge RES)
 begin
@@ -333,8 +331,6 @@ begin
         seq <= 4'h0;
     else if (seq_inc & slot)
         seq <= seq + 4'h1;
-    else if (seq_dec & slot)
-        seq <= seq - 4'h1;
 end
 
 //----------------------
@@ -346,16 +342,15 @@ begin
     state_next = `STATE_INIT;
     seq_clr    = 1'b0;
     seq_inc    = 1'b0;
-    seq_dec    = 1'b0;
     if_do   = 1'b0;
+    pc_clr  = 1'b0;
     pc_inc  = 1'b0;
     pc_dec  = 1'b0;
     pc_inc2 = 1'b0;
     pc_dec2 = 1'b0;
-    pc_clr  = 1'b0;
+    ptr_clr = 1'b0;
     ptr_inc = 1'b0;
     ptr_dec = 1'b0;
-    ptr_clr = 1'b0;
     dr_do = 1'b0;
     dw_do = 1'b0;
     ir_do = 1'b0;

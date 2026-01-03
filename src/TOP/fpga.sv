@@ -25,15 +25,13 @@ module FPGA
     output logic UART_TXD,
     input  logic UART_RXD,
     //
-    output logic LED,
-    output logic DUMMY
+    output logic LED
 );
 
 //----------------
 // LED 
 //----------------
 assign LED = RES_N; // Running
-assign DUMMY = 1'b0;
 
 //----------------------------
 // QSPI Output Buffer
