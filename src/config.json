@@ -13,9 +13,9 @@
 
   "//": "PL_TARGET_DENSITY_PCT - You can increase this if Global Placement fails with error GPL-0302.",
   "//": "Users have reported that values up to 80 worked well for them.",
-  "//": "(1) bfCPU without cache on 1x2, 0.75 makes all pass.",
-  "//": "(2) bfCPU with    cache on 2x2, 0.65 makes small antenna error, but online check is OK.",
-  "PL_TARGET_DENSITY_PCT": 75,
+  "//": "(1) bfCPU without cache on 1x2, 0.75 makes all pass including antenna check.",
+  "//": "(2) bfCPU with    cache on 2x2, 0.65 makes minor antenna errors, but online check is OK.",
+  "PL_TARGET_DENSITY_PCT": 65,
 
   "//": "To improve Antenna Errors",
   "DIODE_INSERTION_STRATEGY": 4,
