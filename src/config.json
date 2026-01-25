@@ -14,7 +14,7 @@
   "//": "PL_TARGET_DENSITY_PCT - You can increase this if Global Placement fails with error GPL-0302.",
   "//": "Users have reported that values up to 80 worked well for them.",
   "//": "(1) bfCPU without cache on 1x2, 0.70 makes antenna error, 0.80 makes all pass.",
-  "//": "(2) bfCPU with    cache on 2x2, 0.66 makes all pass including antenna.",
+  "//": "(2) bfCPU with    cache on 2x2, 0.82 makes all pass including antenna.",
   "PL_TARGET_DENSITY_PCT": 66,
   
   "//": "To improve Antenna Errors",
