@@ -17,11 +17,9 @@ This project aims to logically design a universal Turing machine "bfCPU" impleme
 ### Logic Verification of the bfCPU
 
 
-
 ## External hardware
 
 
 ## Technical Information
-
 
 
