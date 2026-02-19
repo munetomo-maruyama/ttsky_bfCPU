@@ -68,8 +68,8 @@ All RTL files and simulation stuffs are stored in [[bfCPU]](https://github.com/m
 ### FPGA Board to be Used
 The designed bfCPU system will be implemented on an FPGA. The board used is the DE10-Lite (Official Website) from Terasic (Taiwan). The FPGA design resources can be found in [[bfCPU]](https://github.com/munetomo-maruyama/bfCPU).
 
-<img src="doc/image/fpga_system.png" alt="FPGA System of bfCPU" width="100%">
-<img src="doc/image/fpga_system_connection.png" alt="FPGA System Connection" width="100%">
+<img src="image/fpga_system.png" alt="FPGA System of bfCPU" width="100%">
+<img src="image/fpga_system_connection.png" alt="FPGA System Connection" width="100%">
 
 ### Setting Up the bfCPU Development Environments **bfTool** and **bfRun** on Raspberry Pi 5
 Detail information how to setup and use the tools are described in [[bfCPU]](https://github.com/munetomo-maruyama/bfCPU).
@@ -91,7 +91,6 @@ The top level RTL is `tt_um_bfcpu.sv`, and the I/O signals are summarized in the
 | ui[5] | input | - | - |
 | ui[6] | input | - | - |
 | ui[7] | input | UART_RXD | UART Receive Data |
-| :--- | :--- | :---: | :---: |
 | uo[0] | output | UART_TXD | UART Transmit Data |
 | uo[1] | output | - | - |
 | uo[2] | output | - | - |
@@ -100,7 +99,6 @@ The top level RTL is `tt_um_bfcpu.sv`, and the I/O signals are summarized in the
 | uo[5] | output | - | - |
 | uo[6] | output | - | - |
 | uo[7] | output | - | - |
-| :--- | :--- | :---: | :---: |
 | uio[0] | inout | - | - |
 | uio[1] | inout | - | - |
 | uio[2] | inout | QSPI_SIO2 | QSPI Memory Data bit2 (Open Drain) |
